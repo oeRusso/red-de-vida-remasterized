@@ -1,0 +1,40 @@
+.dash_awards {
+  display: block;
+  background-color: var(--bs-primary);
+  height: 2px;
+  width: 20%;
+  margin-left: 130px;
+  margin-top: 25px;
+}
+
+.pagination .page-item .page-link {
+  border-radius: 5rem !important; /* Makes buttons circular */
+  background-color: red; /* Red background */
+  color: white; /* White text */
+  border: none; /* Remove default borders */
+  margin: 0 5px; /* Add spacing between buttons */
+  width: 35px; /* Set width */
+  height: 35px; /* Set height */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pagination .page-item.active .page-link {
+  background-color: darkred; /* Darker red for active page */
+  font-weight: bold; /* Make active page bold */
+}
+
+.pagination .page-item .page-link:hover {
+  background-color: rgb(200, 0, 0); /* Slightly darker red on hover */
+}
+
+.medal-locked {
+  filter: grayscale(100%);
+  transition: opacity 0.3s ease-in-out;
+}
+
+.medal-unlocked {
+  opacity: 1 !important;
+  transition: opacity 0.3s ease-in-out !important;
+}
