@@ -1,0 +1,43 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&family=Noto+Sans+JP:wght@100..900&family=Playwrite+AU+SA:wght@100..400&display=swap');
+@import "../node_modules/bootstrap/scss/functions"; 
+@import "../node_modules/bootstrap/scss/variables";
+@import "../node_modules/bootstrap/scss/mixins";
+
+$primary: #D91100; 
+$secondary: #F7D7DC;
+$info: #F6F4F4;
+$dark: #252525;
+
+$font-family-sans-serif: "Noto Sans JP", system-ui;
+$font-family-base: "Montserrat", system-ui;
+$headings-font-family: "Noto Sans JP", system-ui;
+$input-btn-font-family: "Montserrat", system-ui;
+
+$btn-border-radius: 50rem;
+$btn-link-color: $primary;
+
+$input-bg: $secondary;
+$input-placeholder-color: $primary;
+$input-color: $primary;
+$input-focus-border-color: $primary;
+$input-focus-box-shadow: $primary;
+
+$form-select-bg: $secondary;
+
+$form-select-color: $primary;
+$form-select-focus-box-shadow: $primary;
+$form-select-focus-border-color: $primary;
+
+$form-check-input-checked-border-color: $primary;
+$form-check-input-checked-bg-color: $primary;
+
+// merge with existing $theme-colors map
+$theme-colors: map-merge($theme-colors, (
+  "primary": $primary,
+  "secondary" : $secondary,
+  "info": $info,
+  "dark": $dark
+  ));
+
+// set changes
+@import "../node_modules/bootstrap/scss/bootstrap";
