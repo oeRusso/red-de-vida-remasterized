@@ -4,12 +4,14 @@ import { RotateCcw } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { MAX_DONOR_AGE, MIN_DONOR_AGE } from "@/domain/rules";
-import { Alert, buttonClass, cn } from "./ui";
+import { Alert, cn } from "./ui";
 
 /* Orientativo: repite los requisitos de la landing. La validación real está en el servidor. */
 const QUESTIONS = [
   { id: "edad", text: `¿Tienes entre ${MIN_DONOR_AGE} y ${MAX_DONOR_AGE} años?`, expected: "si" },
   { id: "peso", text: "¿Pesas 50 kg o más?", expected: "si" },
+  { id: "tatuaje", text: "¿Te hiciste un tatuaje o piercing en el último año?", expected: "no" },
+  { id: "embarazo", text: "¿Estás embarazada?", expected: "no" },
   { id: "salud", text: "¿Padeces epilepsia, tuberculosis o alguna enfermedad del corazón?", expected: "no" },
 ] as const;
 
@@ -33,7 +35,7 @@ export function EligibilityCheck() {
                 <label
                   key={option}
                   className={cn(
-                    "flex min-h-11 min-w-20 cursor-pointer items-center justify-center rounded-full border px-5 text-sm font-semibold transition-colors",
+                    "flex min-h-9 min-w-16 cursor-pointer items-center justify-center rounded-full border px-4 text-sm font-semibold transition-colors",
                     "has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-brand",
                     answers[question.id] === option ? "border-brand bg-blush-soft text-brand-deep" : "border-line hover:border-brand",
                   )}
@@ -57,9 +59,9 @@ export function EligibilityCheck() {
         <div className="mt-6 animate-rise">
           {eligible ? (
             <Alert tone="success">
-              <strong>Cumples los requisitos básicos.</strong> Ya puedes elegir hospital, fecha y hora.
-              <Link href="/agendar" className={buttonClass("primary", "mt-3 flex w-fit")}>
-                Agendar mi cita
+              <strong>Cumples los requisitos básicos.</strong> El equipo de salud lo confirmará el día de tu donación.{" "}
+              <Link href="/agendar" className="font-semibold whitespace-nowrap underline">
+                Elegir fecha y lugar
               </Link>
             </Alert>
           ) : (

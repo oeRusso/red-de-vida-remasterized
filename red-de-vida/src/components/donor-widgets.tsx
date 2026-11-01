@@ -1,8 +1,10 @@
-import { Check, ChevronDown, Droplet, ExternalLink, Lock, MapPin } from "lucide-react";
+import { Check, ChevronDown, Droplet, Lock, MapPin } from "lucide-react";
 import Image from "next/image";
-import { institutionWebsite, mapEmbedUrl } from "@/domain/institution-directory";
+import type { CSSProperties } from "react";
 import { type BloodType, type Gender, levelProgress, MEDALS, nextEligibleDate } from "@/domain/rules";
 import { formatLongDate } from "@/lib/format";
+import { InstitutionMap } from "./institution-map";
+import { CountUp } from "./motion/count-up";
 import { cn } from "./ui";
 
 export function LevelBar({ points }: { points: number }) {
@@ -29,11 +31,17 @@ export function LevelBar({ points }: { points: number }) {
   );
 }
 
-/** Anillo de progreso para el panel oscuro. */
-export function LevelRing({ points }: { points: number }) {
+const DROP_PATH = "M60 6C60 6 14 58 14 92a46 46 0 0 0 92 0C106 58 60 6 60 6Z";
+const DROP_TOP = 6;
+const DROP_BOTTOM = 138;
+/** Con 0 % se deja un resto de líquido: una gota vacía se leería como un error de carga. */
+const MIN_VISIBLE_PERCENT = 6;
+
+/** La sangre como medida del nivel: la gota se llena hasta el siguiente. */
+export function DropGauge({ points }: { points: number }) {
   const { level, percent, pointsToNext } = levelProgress(points);
-  const radius = 52;
-  const circumference = 2 * Math.PI * radius;
+  const height = DROP_BOTTOM - DROP_TOP;
+  const surface = DROP_BOTTOM - (height * Math.max(percent, MIN_VISIBLE_PERCENT)) / 100;
   return (
     <div
       role="progressbar"
@@ -41,25 +49,22 @@ export function LevelRing({ points }: { points: number }) {
       aria-valuenow={percent}
       aria-valuemin={0}
       aria-valuemax={100}
-      className="relative size-32 shrink-0"
+      className="relative h-36 w-31 shrink-0"
     >
-      <svg viewBox="0 0 120 120" className="size-full -rotate-90">
-        <circle cx="60" cy="60" r={radius} fill="none" stroke="currentColor" strokeWidth="9" className="text-white/15" />
-        <circle
-          cx="60"
-          cy="60"
-          r={radius}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="9"
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          strokeDashoffset={circumference * (1 - percent / 100)}
-          className="text-brand transition-all"
-        />
+      <svg viewBox="0 0 120 140" className="size-full">
+        <clipPath id="drop-gauge">
+          <path d={DROP_PATH} />
+        </clipPath>
+        <path d={DROP_PATH} fill="currentColor" className="text-white/10" />
+        <g clipPath="url(#drop-gauge)">
+          <g className="drop-level" style={{ "--drop-level": `${surface}px`, "--drop-empty": `${DROP_BOTTOM}px` } as CSSProperties}>
+            <path d="M-60 4q15 -8 30 0t30 0t30 0t30 0t30 0t30 0t30 0v140h-180Z" fill="currentColor" className="drop-wave text-brand" />
+          </g>
+        </g>
+        <path d={DROP_PATH} fill="none" stroke="currentColor" strokeWidth="2" className="text-white/30" />
       </svg>
-      <div className="absolute inset-0 grid place-content-center text-center">
-        <span className="text-[0.65rem] font-bold tracking-widest text-white/70 uppercase">Nivel</span>
+      <div className="absolute inset-x-0 bottom-[11%] grid text-center">
+        <span className="text-[0.6rem] font-bold tracking-widest text-white/80 uppercase">Nivel</span>
         <span className="font-display text-4xl leading-none font-semibold">{level}</span>
       </div>
     </div>
@@ -69,7 +74,7 @@ export function LevelRing({ points }: { points: number }) {
 /** Carné digital, inspirado en el de los centros de sangre. */
 export function DonorCard({ name, bloodType, donations }: { name: string; bloodType: BloodType; donations: number }) {
   return (
-    <div className="relative flex h-full min-h-56 flex-col justify-between overflow-hidden rounded-3xl bg-linear-to-br from-brand to-brand-deep p-7 text-white shadow-lift">
+    <div className="card-shine relative flex h-full min-h-56 flex-col justify-between overflow-hidden rounded-3xl bg-linear-to-br from-brand to-brand-deep p-7 text-white shadow-lift">
       <Droplet aria-hidden className="absolute -right-8 -bottom-10 size-52 fill-white/10 text-transparent" />
       <div className="relative flex items-center gap-2">
         <Image src="/logo.svg" alt="" width={26} height={28} />
@@ -90,9 +95,9 @@ export function DonorCard({ name, bloodType, donations }: { name: string; bloodT
 export function StatsRow({ points, donations, gender, lastDonation }: { points: number; donations: number; gender: Gender; lastDonation?: string }) {
   const eligible = nextEligibleDate(gender, lastDonation);
   const stats = [
-    { label: "Donaciones", value: String(donations) },
-    { label: "Puntos", value: String(points) },
-    { label: "Vidas que pudiste salvar", value: String(donations * 3), wide: true },
+    { label: "Donaciones", value: <CountUp value={donations} /> },
+    { label: "Puntos", value: <CountUp value={points} /> },
+    { label: "Vidas que pudiste salvar", value: <CountUp value={donations * 3} />, wide: true },
     { label: "Próxima donación desde", value: eligible ? formatLongDate(eligible) : "Hoy mismo", wide: true },
   ];
   return (
@@ -119,7 +124,9 @@ export function MedalsGrid({ points }: { points: number }) {
           return (
             <li key={medal.level} className="relative flex flex-col items-center gap-2 text-center">
               {index < MEDALS.length - 1 && (
-                <span aria-hidden className={cn("absolute top-8 left-1/2 hidden h-0.5 w-full sm:block", nextUnlocked ? "bg-brand" : "bg-line")} />
+                <span aria-hidden className="absolute top-8 left-1/2 hidden h-0.5 w-full bg-line sm:block">
+                  {nextUnlocked && <span style={{ animationDelay: `${index * 140}ms` }} className="block size-full origin-left animate-grow-x bg-brand" />}
+                </span>
               )}
               <span className="relative z-10 grid size-16 place-items-center rounded-full bg-surface">
                 <Image
@@ -127,7 +134,8 @@ export function MedalsGrid({ points }: { points: number }) {
                   alt={`${medal.name}${unlocked ? "" : " (bloqueada)"}`}
                   width={64}
                   height={64}
-                  className={cn("size-14 object-contain", !unlocked && "opacity-35 grayscale")}
+                  style={unlocked ? { animationDelay: `${index * 140}ms` } : undefined}
+                  className={cn("size-14 object-contain", unlocked ? "animate-pop" : "opacity-35 grayscale")}
                 />
                 <span
                   aria-hidden
@@ -158,7 +166,6 @@ export function MedalsGrid({ points }: { points: number }) {
 }
 
 export function InstitutionBlock({ name, address }: { name: string; address: string }) {
-  const website = institutionWebsite(name);
   return (
     <div className="mt-4">
       <p className="flex items-start gap-2 text-sm font-semibold">
@@ -166,25 +173,15 @@ export function InstitutionBlock({ name, address }: { name: string; address: str
         {name}
       </p>
       {address && <p className="mt-1 ml-6 text-sm text-muted">{address}</p>}
-      {website && (
-        <a href={website} target="_blank" rel="noreferrer" className="mt-2 ml-6 inline-flex items-center gap-1 text-sm font-semibold text-brand-deep hover:underline">
-          Sitio web <ExternalLink aria-hidden className="size-3.5" />
-          <span className="sr-only">(se abre en otra pestaña)</span>
-        </a>
-      )}
       {address && (
         <details className="group mt-3">
           <summary className="ml-6 inline-flex list-none items-center gap-1 text-sm font-semibold text-brand-deep hover:underline">
             Ver mapa
             <ChevronDown aria-hidden className="size-4 transition-transform group-open:rotate-180" />
           </summary>
-          <iframe
-            title={`Mapa de ${name}`}
-            src={mapEmbedUrl(address)}
-            loading="lazy"
-            referrerPolicy="no-referrer-when-downgrade"
-            className="mt-3 h-52 w-full rounded-2xl border-0 bg-canvas"
-          />
+          <div className="mt-3">
+            <InstitutionMap name={name} address={address} />
+          </div>
         </details>
       )}
     </div>

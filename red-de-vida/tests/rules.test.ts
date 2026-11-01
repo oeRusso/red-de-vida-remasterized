@@ -5,6 +5,7 @@ import {
   availableSlots,
   bookingWindow,
   dayState,
+  earliestSlot,
   firstAvailableDay,
   generateSlots,
   levelProgress,
@@ -115,6 +116,27 @@ describe("turnos", () => {
   it("devuelve null si no queda ningún día", () => {
     const closed = { ...schedule, dailyDonorCapacity: 0 };
     expect(firstAvailableDay(closed, "2030-03-04", "2030-03-08", now)).toBeNull();
+  });
+
+  it("elige el primer turno libre del primer día reservable", () => {
+    const occupied = [slotToDate(monday, "08:00").toISOString()];
+    expect(earliestSlot({ ...schedule, occupied }, monday, "2030-03-08", now)).toEqual({ date: monday, time: "08:30" });
+  });
+
+  it("salta los días completos y los que agotaron su capacidad", () => {
+    const full = ["08:00", "08:30", "09:00", "09:30"].map((t) => slotToDate(monday, t).toISOString());
+    expect(earliestSlot({ ...schedule, occupied: full }, monday, "2030-03-08", now)).toEqual({ date: "2030-03-05", time: "08:00" });
+
+    const occupied = [slotToDate(monday, "08:00").toISOString()];
+    expect(earliestSlot({ ...schedule, occupied, dailyDonorCapacity: 1 }, monday, "2030-03-08", now)).toEqual({ date: "2030-03-05", time: "08:00" });
+  });
+
+  it("no ofrece un turno ya pasado ni fuera de la ventana", () => {
+    // Lunes a las 09:15 en Buenos Aires (UTC-3)
+    const lateMorning = new Date(`${monday}T12:15:00Z`);
+    expect(earliestSlot(schedule, monday, "2030-03-08", lateMorning)).toEqual({ date: monday, time: "09:30" });
+    // Domingo, único día de la ventana: está cerrado.
+    expect(earliestSlot(schedule, "2030-03-10", "2030-03-10", now)).toBeNull();
   });
 
   it("no ofrece turnos ya pasados del día en curso", () => {

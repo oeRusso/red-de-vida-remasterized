@@ -24,15 +24,14 @@
   --shadow-card: 0 1px 2px rgb(47 10 14 / 0.04), 0 12px 32px -20px rgb(47 10 14 / 0.18);
   --shadow-lift: 0 2px 4px rgb(47 10 14 / 0.06), 0 24px 48px -24px rgb(47 10 14 / 0.3);
 
-  --animate-ticker: ticker 48s linear infinite;
-  --animate-float: float 6s ease-in-out infinite;
-  --animate-rise: rise 0.6s ease-out both;
+  --ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
 
-  @keyframes ticker {
-    to {
-      transform: translateX(-50%);
-    }
-  }
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-float-slow: float 8s ease-in-out infinite;
+  --animate-rise: rise 0.7s var(--ease-soft) both;
+  --animate-pop: pop 0.6s var(--ease-soft) both;
+  --animate-grow-x: grow-x 0.7s var(--ease-soft) both;
+  --animate-heartbeat: heartbeat 3.2s ease-in-out infinite;
 
   @keyframes float {
     50% {
@@ -40,11 +39,93 @@
     }
   }
 
+  /* Solo `from`: el estado final es el natural, así que sin animación nada queda oculto. */
   @keyframes rise {
     from {
       opacity: 0;
       transform: translateY(14px);
     }
+  }
+
+  @keyframes pop {
+    from {
+      opacity: 0;
+      transform: scale(0.7);
+    }
+  }
+
+  @keyframes grow-x {
+    from {
+      transform: scaleX(0);
+    }
+  }
+
+  /* Dos latidos y una pausa, como un pulso real. */
+  @keyframes heartbeat {
+    0%,
+    30%,
+    100% {
+      transform: scale(1);
+    }
+    10% {
+      transform: scale(1.03);
+    }
+    20% {
+      transform: scale(1.015);
+    }
+  }
+}
+
+@keyframes draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+}
+
+@keyframes travel {
+  from {
+    stroke-dashoffset: 1.1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes shimmer {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes drop-rise {
+  from {
+    transform: translateY(var(--drop-empty));
+  }
+}
+
+@keyframes drop-wave {
+  to {
+    transform: translateX(-60px);
+  }
+}
+
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@keyframes page-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes step-slide {
+  from {
+    opacity: 0;
+    transform: translateX(var(--step-offset));
   }
 }
 
@@ -86,6 +167,183 @@ summary::-webkit-details-marker {
   display: none;
 }
 
+/* Línea de pulso: base completa y trazo que se dibuja encima. */
+.pulse-line path {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.pulse-trace {
+  stroke-dasharray: 1;
+}
+
+.pulse-travel {
+  stroke-dasharray: 0.1 1;
+  stroke-dashoffset: 1.1;
+  animation: travel 7s linear infinite;
+}
+
+.drop-level {
+  transform: translateY(var(--drop-level));
+  animation: drop-rise 1.4s var(--ease-soft) both;
+}
+
+.drop-wave {
+  animation: drop-wave 5s linear infinite;
+}
+
+.draw-once {
+  stroke-dasharray: 1;
+  animation: draw 0.7s var(--ease-soft) 0.15s both;
+}
+
+.shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.55), transparent);
+  animation: shimmer 1.6s ease-in-out infinite;
+}
+
+/* El retardo es la red de seguridad: si la hidratación falla, el número aparece igual. */
+@media (scripting: enabled) and (prefers-reduced-motion: no-preference) {
+  .count-up:not([data-ready]) {
+    opacity: 0;
+    animation: appear 0s linear 1.5s forwards;
+  }
+}
+
+@keyframes appear {
+  to {
+    opacity: 1;
+  }
+}
+
+/* Sin soporte de animaciones ligadas al scroll, todo se ve completo desde el inicio. */
+@supports (animation-timeline: view()) {
+  .reveal {
+    animation: rise linear both;
+    animation-timeline: view();
+    animation-range: entry calc(var(--reveal-step, 0) * 12%) entry calc(60% + var(--reveal-step, 0) * 12%);
+  }
+
+  .pulse-trace {
+    animation: draw linear both;
+    animation-timeline: view();
+    animation-range: entry 40% cover 60%;
+  }
+
+  .site-header-bar {
+    animation: header-lift linear both;
+    animation-timeline: scroll();
+    animation-range: 0 120px;
+  }
+}
+
+@keyframes header-lift {
+  to {
+    box-shadow: 0 10px 30px -22px rgb(47 10 14 / 0.45);
+  }
+}
+
+@media (hover: hover) {
+  .card-shine::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-110%);
+    background: linear-gradient(105deg, transparent 35%, rgb(255 255 255 / 0.16), transparent 65%);
+    transition: transform 0.8s var(--ease-soft);
+    pointer-events: none;
+  }
+
+  .card-shine:hover::after {
+    transform: translateX(110%);
+  }
+}
+
+/* Apertura de acordeón. Va aparte: un selector desconocido invalidaría una regla compartida. */
+@supports (interpolate-size: allow-keywords) {
+  .accordion {
+    interpolate-size: allow-keywords;
+  }
+
+  .accordion::details-content {
+    height: 0;
+    overflow: clip;
+    transition:
+      height 0.3s var(--ease-soft),
+      content-visibility 0.3s allow-discrete;
+  }
+
+  .accordion[open]::details-content {
+    height: auto;
+  }
+}
+
+/* Transiciones de navegación */
+::view-transition {
+  pointer-events: none;
+}
+
+::view-transition-group(site-header) {
+  animation: none;
+  z-index: 100;
+}
+
+::view-transition-old(site-header) {
+  display: none;
+}
+
+::view-transition-new(site-header) {
+  animation: none;
+}
+
+::view-transition-old(.page) {
+  animation: page-out 0.14s ease-out both;
+}
+
+::view-transition-new(.page) {
+  animation: page-in 0.32s var(--ease-soft) 0.08s both;
+}
+
+::view-transition-old(.skeleton) {
+  animation: page-out 0.14s ease-out both;
+}
+
+::view-transition-new(.reveal-content) {
+  animation: page-in 0.32s var(--ease-soft) both;
+}
+
+::view-transition-old(.step-forward),
+::view-transition-old(.step-back) {
+  animation: page-out 0.14s ease-out both;
+}
+
+::view-transition-new(.step-forward) {
+  --step-offset: 28px;
+  animation: step-slide 0.36s var(--ease-soft) 0.06s both;
+}
+
+::view-transition-new(.step-back) {
+  --step-offset: -28px;
+  animation: step-slide 0.36s var(--ease-soft) 0.06s both;
+}
+
+@media print {
+  .reveal {
+    animation: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
@@ -96,5 +354,15 @@ summary::-webkit-details-marker {
   *::after {
     animation: none !important;
     transition: none !important;
+  }
+
+  .accordion::details-content {
+    transition: none;
+  }
+
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
   }
 }

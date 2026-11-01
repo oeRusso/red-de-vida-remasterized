@@ -6,7 +6,7 @@ El sistema original (`../c23-91-webapp-main`) era un frontend de HTML y Bootstra
 
 No hace falta migrar datos. Se conservan las colecciones (`users`, `appointments`, `donations`, `institutions`, `awards`), los campos, los enums, el formato de fechas y el hash de contraseñas: los usuarios actuales entran con su contraseña de siempre.
 
-Lo único nuevo son dos índices únicos parciales en `appointments`, que no se crean solos en producción. Evitan que dos reservas simultáneas tomen el mismo turno y que un usuario tenga dos citas pendientes.
+Lo único nuevo son tres índices en `appointments`, que no se crean solos en producción. Dos son únicos y parciales: evitan que dos reservas simultáneas tomen el mismo turno y que un usuario tenga dos citas pendientes. El tercero, `status_date`, sirve a la caducidad y al turno más cercano, que sin él recorrerían toda la colección. Ninguno altera los documentos.
 
 ## Pasos para pasar a producción
 
@@ -33,6 +33,7 @@ Mismas rutas y mismo sobre JSON (`{ status, message, payload }`). Lo que cambia 
 | `GET, POST /api/users` | Público | Administrador |
 | `GET /api/appointments`, `GET /api/donations` | Público | Administrador |
 | `POST /api/appointments` | Público | Con sesión. Se ignora `userId` del cuerpo |
+| `GET /api/appointments/nearest` | No existía | Nuevo, con sesión. Primer turno libre por institución, sin datos de otras citas |
 | `PUT /api/appointments/:id/cancel` | Público | Dueño de la cita o administrador |
 | `PUT /api/appointments/:id/confirm` | Público | Administrador |
 
@@ -78,7 +79,7 @@ Otros cambios de contrato:
 | Nombres y placeholders inválidos: `José María` y `Contr43s3nh4+` no pasaban su propio formulario. | Se aceptan acentos, ñ y símbolos. |
 | Fecha de nacimiento un día antes en Argentina y mes desplazado en el perfil. | Se formatea en UTC. |
 | Una institución sin horario de sábado rompía la carga de la agenda. | Ese día figura cerrado. |
-| Una institución fuera de la lista fija de hospitales dejaba de pintar la página. | Se muestra sin enlace, y el mapa sale de la dirección. |
+| Una institución fuera de la lista fija de hospitales dejaba de pintar la página. | Se muestra igual, y el mapa sale de la dirección. |
 | El calendario no se actualizaba al elegir institución y usaba rojo para dos significados. | Se repinta y usa estados distintos también sin color. |
 | Se podía enviar la cita sin elegir hora. | El botón queda deshabilitado. |
 | Racha "2 🔥" fija en el HTML, estado "Pending" en inglés, enlace muerto "Configuración". | Datos reales, en español, enlace retirado. |

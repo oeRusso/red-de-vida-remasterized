@@ -58,7 +58,7 @@ export function SiteFooter() {
         </div>
       </div>
       <p className="border-t border-white/10 py-5 text-center text-xs text-white/60">
-        Red de Vida · Todos los derechos reservados
+        Red de Vida · Proyecto demostrativo: las sedes y las citas son ficticias.
       </p>
     </footer>
   );

@@ -17,7 +17,7 @@ export function DeleteAccount({ userId }: { userId: string }) {
         router.push("/");
         router.refresh();
       }}
-      trigger={{ children: "Eliminar mi cuenta", variant: "danger" }}
+      trigger={{ children: "Eliminar mi cuenta", variant: "danger", size: "sm" }}
     />
   );
 }

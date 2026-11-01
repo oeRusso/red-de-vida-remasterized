@@ -1,6 +1,6 @@
 # Red de Vida
 
-Plataforma web para incentivar la donación de sangre: agenda de citas en instituciones, historial de donaciones y gamificación con puntos y medallas.
+Plataforma web de una red de sedes de donación de sangre: agenda de citas, historial de donaciones y gamificación con puntos y medallas. Red de Vida y sus sedes son ficticias: es un proyecto demostrativo.
 
 Hecha con Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4, MongoDB y Mongoose.
 

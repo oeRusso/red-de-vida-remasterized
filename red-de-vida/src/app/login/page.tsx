@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { Suspense } from "react";
 import { LoginForm } from "@/components/auth-forms";
 import { AuthShell } from "@/components/auth-shell";
+import { SuspenseReveal } from "@/components/motion/transitions";
 import { Alert, Skeleton } from "@/components/ui";
 import { getOptionalUser } from "@/server/dal";
 
@@ -31,9 +31,9 @@ async function Content({ searchParams }: { searchParams: SearchParams }) {
 export default function LoginPage({ searchParams }: { searchParams: SearchParams }) {
   return (
     <AuthShell title="Iniciar sesión" subtitle="Te damos la bienvenida de nuevo a Red de Vida.">
-      <Suspense fallback={<Skeleton className="h-64" />}>
+      <SuspenseReveal fallback={<Skeleton className="h-64" />}>
         <Content searchParams={searchParams} />
-      </Suspense>
+      </SuspenseReveal>
     </AuthShell>
   );
 }

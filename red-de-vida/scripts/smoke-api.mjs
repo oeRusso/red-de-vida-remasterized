@@ -90,6 +90,7 @@ const inst = await anon("/api/institutions");
 check("instituciones públicas sin citas", inst.status === 200 && inst.json.payload.length === 12 && !("appointments" in inst.json.payload[0]));
 const institutionId = inst.json.payload[0]._id;
 check("agenda requiere sesión", (await anon(`/api/institutions/${institutionId}/appointments`)).status === 401);
+check("turno más cercano requiere sesión", (await anon("/api/appointments/nearest")).status === 401);
 
 // Flujo de cita: elegimos un día hábil dentro de la ventana
 const day = new Date(Date.now() + 3 * 86400000);
@@ -106,6 +107,12 @@ check("segunda pendiente → 409", (await donor("/api/appointments", { method: "
 check("turno ocupado → 409", (await other("/api/appointments", { method: "POST", body: { institutionId, appointmentDate: date } })).status === 409);
 const sched = await other(`/api/institutions/${institutionId}/appointments`);
 check("agenda sin datos ajenos", sched.status === 200 && sched.json.payload.occupied.includes(date) && !sched.text.includes("Nota privada"));
+const nearest = await other("/api/appointments/nearest");
+check(
+  "turno más cercano sin datos ajenos",
+  nearest.status === 200 && nearest.json.payload.length === 3 && !nearest.text.includes("Nota privada") && !nearest.text.includes("occupied") && !nearest.text.includes("userId"),
+  nearest.text,
+);
 check("otro no cancela mi cita → 403", (await other(`/api/appointments/${apptId}/cancel`, { method: "PUT" })).status === 403);
 const conf = await admin(`/api/appointments/${apptId}/confirm`, { method: "PUT" });
 check("admin confirma: 30 puntos y medalla 1", conf.status === 200 && conf.json.payload.totalPoints === 30 && conf.json.payload.newAward?.level === 1, conf.text);

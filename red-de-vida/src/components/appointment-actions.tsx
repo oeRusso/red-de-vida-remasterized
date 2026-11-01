@@ -5,8 +5,6 @@ import { POINTS_PER_DONATION } from "@/domain/rules";
 import { api } from "@/lib/api";
 import { ConfirmDialog } from "./confirm-dialog";
 
-const COMPACT = "!min-h-9 !px-4 !py-1";
-
 export function CancelAppointmentButton({ id, compact }: { id: string; compact?: boolean }) {
   const router = useRouter();
   return (
@@ -19,7 +17,7 @@ export function CancelAppointmentButton({ id, compact }: { id: string; compact?:
         await api(`/api/appointments/${id}/cancel`, { method: "PUT" });
         router.refresh();
       }}
-      trigger={{ children: "Cancelar", variant: "danger", className: compact ? COMPACT : undefined }}
+      trigger={{ children: "Cancelar", variant: "danger", size: compact ? "sm" : "md" }}
     />
   );
 }
@@ -35,7 +33,7 @@ export function ConfirmAppointmentButton({ id, donor }: { id: string; donor: str
         await api(`/api/appointments/${id}/confirm`, { method: "PUT" });
         router.refresh();
       }}
-      trigger={{ children: "Confirmar", className: COMPACT }}
+      trigger={{ children: "Confirmar", size: "sm" }}
     />
   );
 }

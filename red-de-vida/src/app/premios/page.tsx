@@ -1,9 +1,11 @@
-import { ArrowRight, CalendarClock, ChevronLeft, ChevronRight, HeartHandshake, Stethoscope, Timer } from "lucide-react";
+import { ArrowRight, CalendarClock, ChevronDown, ChevronLeft, ChevronRight, HeartHandshake, Stethoscope, Timer } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Suspense } from "react";
 import { CancelAppointmentButton } from "@/components/appointment-actions";
-import { DonorCard, InstitutionBlock, LevelRing, MedalsGrid, StatsRow } from "@/components/donor-widgets";
+import { DonorCard, DropGauge, InstitutionBlock, MedalsGrid, StatsRow } from "@/components/donor-widgets";
+import { MedalReveal } from "@/components/medal-reveal";
+import { PageTransition, SuspenseReveal } from "@/components/motion/transitions";
+import { PreparationList } from "@/components/preparation-list";
 import { buttonClass, Card, cn, PageSkeleton } from "@/components/ui";
 import { type AppointmentStatus, DONATIONS_PER_PAGE, levelProgress } from "@/domain/rules";
 import { formatLongDate, formatShortDate, formatTime, formatWeekday } from "@/lib/format";
@@ -64,7 +66,7 @@ function nextStepFor(
   return {
     icon: HeartHandshake,
     title: "Ya puedes donar",
-    text: "Elige hospital, fecha y hora en tres pasos.",
+    text: "Elige sede, fecha y hora en tres pasos.",
     href: "/agendar",
     action: "Agendar cita",
   };
@@ -76,9 +78,6 @@ function AppointmentCard({ appointment }: { appointment: AppointmentView | null 
       <Card id="mi-cita" className="flex flex-col items-center justify-center gap-4 text-center">
         <h2 className="text-2xl">Mi última cita</h2>
         <p className="text-sm text-muted">Aún no tienes ninguna cita agendada.</p>
-        <Link href="/agendar" className={buttonClass("primary")}>
-          Agendar cita
-        </Link>
       </Card>
     );
   }
@@ -92,15 +91,22 @@ function AppointmentCard({ appointment }: { appointment: AppointmentView | null 
       <p className="mt-4 font-display text-xl font-semibold">{formatLongDate(appointment.date)}</p>
       <p className="text-sm text-muted">{formatTime(appointment.date)} h</p>
       <InstitutionBlock name={appointment.institutionName} address={appointment.institutionAddress} />
-      <div className="mt-5">
-        {appointment.status === "Pending" ? (
-          <CancelAppointmentButton id={appointment.id} />
-        ) : (
-          <Link href="/agendar" className={buttonClass("secondary")}>
-            Agendar otra cita
-          </Link>
-        )}
-      </div>
+      {appointment.status === "Pending" && (
+        <>
+          <details className="group mt-4 rounded-2xl bg-canvas p-4">
+            <summary className="flex list-none items-center justify-between gap-2 text-sm font-semibold">
+              Cómo prepararte
+              <ChevronDown aria-hidden className="size-4 transition-transform group-open:rotate-180" />
+            </summary>
+            <div className="mt-3">
+              <PreparationList />
+            </div>
+          </details>
+          <div className="mt-5">
+            <CancelAppointmentButton id={appointment.id} compact />
+          </div>
+        </>
+      )}
     </Card>
   );
 }
@@ -138,7 +144,7 @@ function DonationsTable({ donations, page }: { donations: DonationView[]; page: 
               <tr>
                 <th scope="col" className="py-2 pr-4 font-semibold">N.º</th>
                 <th scope="col" className="py-2 pr-4 font-semibold">Fecha</th>
-                <th scope="col" className="py-2 pr-4 font-semibold">Hospital</th>
+                <th scope="col" className="py-2 pr-4 font-semibold">Sede</th>
                 <th scope="col" className="hidden py-2 font-semibold md:table-cell">Ubicación</th>
               </tr>
             </thead>
@@ -195,6 +201,7 @@ async function Content({ searchParams }: { searchParams: SearchParams }) {
 
   return (
     <>
+      <MedalReveal userId={profile.id} points={profile.totalPoints} />
       <div className="grid gap-6 lg:grid-cols-3">
         <section className="flex flex-col justify-between gap-8 rounded-3xl bg-wine p-7 text-white shadow-lift sm:p-9 lg:col-span-2">
           <div className="flex flex-wrap items-center justify-between gap-6">
@@ -204,7 +211,7 @@ async function Content({ searchParams }: { searchParams: SearchParams }) {
                 Te faltan {pointsToNext} puntos para llegar al nivel {level + 1}.
               </p>
             </div>
-            <LevelRing points={profile.totalPoints} />
+            <DropGauge points={profile.totalPoints} />
           </div>
           <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-white/10 p-4">
             <div className="flex min-w-0 items-center gap-3">
@@ -216,7 +223,7 @@ async function Content({ searchParams }: { searchParams: SearchParams }) {
                 <p className="text-sm text-white/75 first-letter:uppercase">{next.text}</p>
               </div>
             </div>
-            <Link href={next.href} className={buttonClass("inverse", "!min-h-10 !py-2")}>
+            <Link href={next.href} className={buttonClass("inverse", undefined, "sm")}>
               {next.action}
               <ArrowRight aria-hidden className="size-4" />
             </Link>
@@ -246,10 +253,12 @@ async function Content({ searchParams }: { searchParams: SearchParams }) {
 
 export default function AwardsPage({ searchParams }: { searchParams: SearchParams }) {
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:py-10">
-      <Suspense fallback={<PageSkeleton />}>
-        <Content searchParams={searchParams} />
-      </Suspense>
-    </div>
+    <PageTransition>
+      <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:py-10">
+        <SuspenseReveal fallback={<PageSkeleton />}>
+          <Content searchParams={searchParams} />
+        </SuspenseReveal>
+      </div>
+    </PageTransition>
   );
 }

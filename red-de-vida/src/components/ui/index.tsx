@@ -6,23 +6,39 @@ export const cn = (...classes: (string | false | null | undefined)[]) => classes
 type Variant = "primary" | "secondary" | "ghost" | "danger" | "inverse";
 
 const VARIANTS: Record<Variant, string> = {
-  primary: "bg-brand text-white shadow-sm hover:bg-brand-deep",
-  secondary: "border border-line bg-surface text-ink hover:border-brand hover:text-brand",
+  primary: "bg-brand text-white shadow-sm hover:-translate-y-px hover:bg-brand-deep hover:shadow-md",
+  secondary: "border border-line bg-surface text-ink hover:-translate-y-px hover:border-brand hover:text-brand",
   ghost: "text-brand hover:bg-blush-soft",
   danger: "border border-brand/60 text-brand-deep hover:bg-brand hover:text-white",
   inverse: "bg-white text-wine hover:bg-blush",
 };
 
-export const buttonClass = (variant: Variant = "primary", className?: string) =>
+/* `md` es el tamaño normal. `sm` va dentro de tarjetas y filas; `lg`, solo en la acción principal del hero. */
+const SIZES = {
+  sm: "min-h-9 px-4 py-1.5",
+  md: "min-h-10 px-5 py-2",
+  lg: "min-h-12 px-7 py-3",
+};
+
+type Size = keyof typeof SIZES;
+
+export const buttonClass = (variant: Variant = "primary", className?: string, size: Size = "md") =>
   cn(
-    "inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-6 py-2.5 text-sm font-semibold transition-all active:scale-[0.98]",
-    "disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100",
+    "inline-flex items-center justify-center gap-2 rounded-full text-sm font-semibold transition-all active:scale-[0.98]",
+    "disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-sm disabled:active:scale-100",
+    SIZES[size],
     VARIANTS[variant],
     className,
   );
 
-export function Button({ variant, className, type = "button", ...props }: ComponentProps<"button"> & { variant?: Variant }) {
-  return <button type={type} className={buttonClass(variant, className)} {...props} />;
+export function Button({
+  variant,
+  size,
+  className,
+  type = "button",
+  ...props
+}: ComponentProps<"button"> & { variant?: Variant; size?: Size }) {
+  return <button type={type} className={buttonClass(variant, className, size)} {...props} />;
 }
 
 const ALERTS = {
@@ -82,7 +98,7 @@ export function Field({
 }
 
 export function Skeleton({ className }: { className?: string }) {
-  return <div aria-hidden className={cn("animate-pulse rounded-3xl bg-line/60", className)} />;
+  return <div aria-hidden className={cn("shimmer rounded-3xl bg-line/60", className)} />;
 }
 
 export function PageSkeleton() {

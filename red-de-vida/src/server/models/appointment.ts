@@ -16,6 +16,8 @@ const appointmentSchema = new Schema(
 const pendingOnly = { partialFilterExpression: { status: "Pending" }, unique: true };
 appointmentSchema.index({ institutionId: 1, appointmentDate: 1 }, { ...pendingOnly, name: "unique_pending_slot" });
 appointmentSchema.index({ userId: 1 }, { ...pendingOnly, name: "unique_pending_per_user" });
+// La caducidad se aplica en cada lectura: sin este índice recorrería toda la colección.
+appointmentSchema.index({ status: 1, appointmentDate: 1 }, { name: "status_date" });
 
 export type AppointmentFields = InferSchemaType<typeof appointmentSchema>;
 

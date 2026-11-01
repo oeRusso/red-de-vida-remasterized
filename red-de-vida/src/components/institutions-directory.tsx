@@ -1,9 +1,8 @@
 "use client";
 
-import { Building2, Clock, ExternalLink, MapPin, Search } from "lucide-react";
+import { Building2, Clock, MapPin, Search } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
-import { institutionWebsite } from "@/domain/institution-directory";
+import { type CSSProperties, useState } from "react";
 import { type DayHours, INSTITUTION_TYPES } from "@/domain/rules";
 import type { InstitutionOption } from "@/server/dal";
 import { buttonClass, cn, inputClass } from "./ui";
@@ -59,20 +58,23 @@ export function InstitutionsDirectory({ institutions }: { institutions: Institut
       </div>
 
       <p aria-live="polite" className="mt-5 text-sm text-muted">
-        {visible.length === 1 ? "1 institución" : `${visible.length} instituciones`}
+        {visible.length === 1 ? "1 sede" : `${visible.length} sedes`}
       </p>
 
       {visible.length === 0 ? (
         <p className="mt-4 rounded-3xl border border-dashed border-line p-10 text-center text-muted">
-          No encontramos instituciones con esa búsqueda.
+          No encontramos sedes con esa búsqueda.
         </p>
       ) : (
         <ul className="mt-4 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-          {visible.map((institution) => {
-            const website = institutionWebsite(institution.name);
+          {visible.map((institution, index) => {
             const { mondayToFriday, saturday, sunday } = institution.operatingHours;
             return (
-              <li key={institution.id} className="flex flex-col rounded-3xl border border-line bg-surface p-6 shadow-card transition-all hover:-translate-y-0.5 hover:shadow-lift">
+              <li
+                key={institution.id}
+                style={{ "--reveal-step": index % 3 } as CSSProperties}
+                className="reveal flex flex-col rounded-3xl border border-line bg-surface p-6 shadow-card transition-shadow hover:shadow-lift"
+              >
                 <p className="inline-flex w-fit items-center gap-1.5 rounded-full bg-blush-soft px-3 py-1 text-xs font-bold text-brand-deep">
                   <Building2 aria-hidden className="size-3.5" />
                   {institution.type}
@@ -93,17 +95,10 @@ export function InstitutionsDirectory({ institutions }: { institutions: Institut
                     <dd>{hoursLabel(sunday)}</dd>
                   </dl>
                 </div>
-                <div className="mt-auto flex flex-wrap items-center justify-between gap-3 pt-5">
-                  <Link href={`/agendar?institucion=${institution.id}`} className={buttonClass("primary", "!min-h-10 !py-2")}>
+                <div className="mt-auto pt-5">
+                  <Link href={`/agendar?institucion=${institution.id}`} className={buttonClass("primary", undefined, "sm")}>
                     Agendar aquí
                   </Link>
-                  {website && (
-                    <a href={website} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-sm font-semibold text-brand-deep hover:underline">
-                      Sitio web
-                      <ExternalLink aria-hidden className="size-3.5" />
-                      <span className="sr-only">(se abre en otra pestaña)</span>
-                    </a>
-                  )}
                 </div>
               </li>
             );

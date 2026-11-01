@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Proyecto
 
-Red de Vida: plataforma de donación de sangre con citas, historial y gamificación. La interfaz, los mensajes y la documentación están en español.
+Red de Vida: red ficticia de sedes de donación de sangre, con citas, historial y gamificación. Es un proyecto demostrativo: no agregar centros reales ni enlaces a sitios de terceros. La interfaz, los mensajes y la documentación están en español.
 
 - `red-de-vida/`: la aplicación activa (Next.js 16 con MongoDB). Todo el trabajo nuevo va aquí.
 - `c23-91-webapp-main/`: sistema original (HTML + Express). Es solo referencia: no modificar.

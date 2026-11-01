@@ -12,14 +12,12 @@ async function AccountNav() {
 
 export function SiteHeader() {
   return (
-    <header className="sticky top-0 z-30">
+    // Con nombre propio el encabezado queda fijo mientras el contenido cambia de página.
+    <header className="sticky top-0 z-30 [view-transition-name:site-header]">
       <div className="hidden bg-wine text-xs text-white/80 lg:block">
         <div className="mx-auto flex h-9 max-w-6xl items-center justify-between px-4">
           <p>Cada donación de sangre puede salvar hasta tres vidas.</p>
           <nav aria-label="Enlaces rápidos" className="flex gap-6">
-            <Link href="/instituciones" className="hover:text-white">
-              Dónde donar
-            </Link>
             <Link href="/#requisitos" className="hover:text-white">
               ¿Puedo donar?
             </Link>
@@ -29,7 +27,8 @@ export function SiteHeader() {
           </nav>
         </div>
       </div>
-      <div className="border-b border-line bg-surface/95 backdrop-blur">
+      {/* Opaco: `view-transition-name` en el encabezado anula cualquier `backdrop-blur` de sus hijos. */}
+      <div className="site-header-bar border-b border-line bg-surface">
         <div className="relative mx-auto flex h-18 max-w-6xl items-center justify-between gap-4 px-4">
           <Link href="/" className="flex items-center gap-3">
             {/* El logo es blanco: necesita fondo de marca. */}

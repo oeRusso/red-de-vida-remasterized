@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
 import { BookingWizard } from "@/components/booking-wizard";
+import { PageTransition, SuspenseReveal } from "@/components/motion/transitions";
 import { PageHeading, PageSkeleton } from "@/components/ui";
 import { getBookingContext, getInstitutionOptions, requireUser } from "@/server/dal";
 
@@ -21,11 +21,13 @@ async function Content({ searchParams }: { searchParams: SearchParams }) {
 
 export default function BookingPage({ searchParams }: { searchParams: SearchParams }) {
   return (
-    <div className="mx-auto w-full max-w-5xl px-4 py-10">
-      <PageHeading title="Agenda tu cita" description="Tres pasos y tu lugar queda reservado." />
-      <Suspense fallback={<PageSkeleton />}>
-        <Content searchParams={searchParams} />
-      </Suspense>
-    </div>
+    <PageTransition>
+      <div className="mx-auto w-full max-w-5xl px-4 py-10">
+        <PageHeading title="Agenda tu cita" description="Tres pasos y tu lugar queda reservado." />
+        <SuspenseReveal fallback={<PageSkeleton />}>
+          <Content searchParams={searchParams} />
+        </SuspenseReveal>
+      </div>
+    </PageTransition>
   );
 }

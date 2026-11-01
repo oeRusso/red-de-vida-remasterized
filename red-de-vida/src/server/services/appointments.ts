@@ -1,14 +1,17 @@
 import "server-only";
 import type { z } from "zod";
 import {
+  addDays,
   type AppointmentStatus,
   availableSlots,
   bookingWindow,
   DONATION_INTERVAL_MONTHS,
+  earliestSlot,
   type Gender,
   isDonorAge,
   MAX_DONOR_AGE,
   MIN_DONOR_AGE,
+  NEAREST_SLOTS_LIMIT,
   type OperatingHours,
   pendingCutoff,
   POINTS_PER_DONATION,
@@ -53,17 +56,75 @@ export async function lastDonationDate(userId: string): Promise<Date | null> {
   return last?.donationDate ?? null;
 }
 
-/** Fechas ocupadas: citas no canceladas (el legacy dejaba bloqueados para siempre los turnos cancelados). */
+/** Una cita ocupa turno mientras no esté cancelada (el legacy dejaba bloqueados para siempre los cancelados). */
+const OCCUPIES_SLOT = { status: { $ne: "Cancelled" as const } };
+
+const startOfDay = (dateKey: string) => new Date(`${dateKey}T00:00:00.000Z`);
+
 export async function occupiedDates(institutionId: string, from?: string) {
   await connectDB();
   const appointments = await Appointment.find({
     institutionId,
-    status: { $ne: "Cancelled" },
-    ...(from && { appointmentDate: { $gte: new Date(`${from}T00:00:00.000Z`) } }),
+    ...OCCUPIES_SLOT,
+    ...(from && { appointmentDate: { $gte: startOfDay(from) } }),
   })
     .select("appointmentDate")
     .lean();
   return appointments.map((appointment) => appointment.appointmentDate.toISOString());
+}
+
+export type NearestSlot = {
+  institutionId: string;
+  institutionName: string;
+  institutionType: string;
+  address: string;
+  date: string;
+  time: string;
+};
+
+/**
+ * Primer turno libre de cada institución, del más cercano al más lejano, dentro
+ * de la ventana de reserva del usuario. Solo orienta: agendar vuelve a validar
+ * todo. Las citas se traen en una sola consulta para no hacer una por institución.
+ */
+export async function nearestSlots(userId: string): Promise<NearestSlot[]> {
+  await connectDB();
+  const user = await User.findById(userId).select("gender").lean();
+  if (!user) throw new DomainError(404, "Usuario no encontrado.");
+
+  const window = bookingWindow(user.gender as Gender, await lastDonationDate(userId), todayKey());
+  const [institutions, appointments] = await Promise.all([
+    Institution.find().select("name institutionType address operatingHours dailyDonorCapacity").sort({ name: 1 }).lean(),
+    Appointment.find({
+      ...OCCUPIES_SLOT,
+      appointmentDate: { $gte: startOfDay(window.from), $lt: startOfDay(addDays(window.to, 1)) },
+    })
+      .select("institutionId appointmentDate")
+      .lean(),
+  ]);
+
+  const occupiedByInstitution = new Map<string, string[]>();
+  for (const { institutionId, appointmentDate } of appointments) {
+    const key = String(institutionId);
+    occupiedByInstitution.set(key, [...(occupiedByInstitution.get(key) ?? []), appointmentDate.toISOString()]);
+  }
+
+  const now = new Date();
+  return institutions
+    .flatMap((institution) => {
+      const id = String(institution._id);
+      const schedule = {
+        operatingHours: institution.operatingHours as OperatingHours,
+        dailyDonorCapacity: institution.dailyDonorCapacity,
+        occupied: occupiedByInstitution.get(id) ?? [],
+      };
+      const slot = earliestSlot(schedule, window.from, window.to, now);
+      return slot
+        ? [{ institutionId: id, institutionName: institution.name, institutionType: institution.institutionType, address: institution.address, ...slot }]
+        : [];
+    })
+    .sort((a, b) => `${a.date}T${a.time}`.localeCompare(`${b.date}T${b.time}`))
+    .slice(0, NEAREST_SLOTS_LIMIT);
 }
 
 export async function createAppointment(userId: string, input: z.output<typeof appointmentCreateSchema>) {

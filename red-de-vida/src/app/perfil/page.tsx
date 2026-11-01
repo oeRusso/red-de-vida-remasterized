@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
 import { DeleteAccount } from "@/components/delete-account";
 import { DonorCard, LevelBar } from "@/components/donor-widgets";
+import { PageTransition, SuspenseReveal } from "@/components/motion/transitions";
 import { ProfileForm } from "@/components/profile-form";
 import { Card, PageHeading, PageSkeleton } from "@/components/ui";
 import { GENDER_LABELS } from "@/domain/rules";
@@ -52,10 +52,12 @@ async function Content() {
 
 export default function ProfilePage() {
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 py-10">
-      <Suspense fallback={<PageSkeleton />}>
-        <Content />
-      </Suspense>
-    </div>
+    <PageTransition>
+      <div className="mx-auto w-full max-w-6xl px-4 py-10">
+        <SuspenseReveal fallback={<PageSkeleton />}>
+          <Content />
+        </SuspenseReveal>
+      </div>
+    </PageTransition>
   );
 }

@@ -73,7 +73,7 @@ export function LoginForm({ next }: { next: string }) {
         />
       </Field>
       <Button type="submit" disabled={pending} className="mt-2">
-        {pending ? "Ingresando…" : "Iniciar sesión"}
+        {pending ? "Ingresando…" : "Entrar"}
       </Button>
       <p className="text-center text-sm text-muted">
         ¿Aún no tienes cuenta?{" "}

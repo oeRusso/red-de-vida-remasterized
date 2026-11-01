@@ -1,7 +1,7 @@
 import { MongoMemoryServer } from "mongodb-memory-server";
 import mongoose from "mongoose";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { addDays, MEDALS, slotToDate, todayKey } from "@/domain/rules";
+import { addDays, addMonths, DONATION_INTERVAL_MONTHS, MEDALS, slotToDate, todayKey } from "@/domain/rules";
 import { connectDB } from "@/server/db";
 import { DomainError } from "@/server/errors";
 import { Appointment, Award, Donation, Institution, User } from "@/server/models";
@@ -10,6 +10,7 @@ import {
   confirmAppointment,
   createAppointment,
   expireOverdueAppointments,
+  nearestSlots,
   occupiedDates,
 } from "@/server/services/appointments";
 import { deleteInstitution, institutionSchedule } from "@/server/services/institutions";
@@ -272,6 +273,103 @@ describe("agendar cita", () => {
     const userId = await makeUser();
     await User.updateOne({ _id: userId }, { birthday: new Date("1940-01-01") });
     await expectError(createAppointment(userId, { institutionId, appointmentDate: inDays(1) }), 422);
+  });
+});
+
+describe("turno más cercano", () => {
+  /** Abre todos los días con un solo turno, para controlar exactamente cuándo se llena. */
+  const oneSlotHours = {
+    mondayToFriday: { open: "08:00", close: "08:30" },
+    saturday: { open: "08:00", close: "08:30" },
+    sunday: { open: "08:00", close: "08:30" },
+  };
+  /** Mañana existe siempre aunque hoy ya hayan pasado los turnos. */
+  const tomorrow = addDays(todayKey(), 1);
+
+  /** Ocupa los días desde hoy hasta `days` incluido en una institución. */
+  async function occupy(institutionId: string, userId: string, days: number) {
+    await Appointment.collection.insertMany(
+      Array.from({ length: days + 1 }, (_, day) => ({
+        userId: new mongoose.Types.ObjectId(userId),
+        institutionId: new mongoose.Types.ObjectId(institutionId),
+        appointmentDate: new Date(inDays(day, "08:00")),
+        status: "Completed",
+      })),
+    );
+  }
+
+  it("ordena por cercanía y da una opción por institución", async () => {
+    const userId = await makeUser();
+    const later = await makeInstitution({ name: "A Más lejana", operatingHours: oneSlotHours });
+    const sooner = await makeInstitution({ name: "B Más cercana", operatingHours: oneSlotHours });
+    await occupy(later, userId, 3);
+    await occupy(sooner, userId, 1);
+
+    const slots = await nearestSlots(userId);
+    expect(slots.map((slot) => [slot.institutionId, slot.date, slot.time])).toEqual([
+      [sooner, addDays(todayKey(), 2), "08:00"],
+      [later, addDays(todayKey(), 4), "08:00"],
+    ]);
+  });
+
+  it("limita las opciones y desempata por nombre", async () => {
+    const userId = await makeUser();
+    const ids = [];
+    for (const name of ["D", "B", "A", "C"]) ids.push(await makeInstitution({ name, operatingHours: oneSlotHours }));
+    for (const id of ids) await occupy(id, userId, 1);
+
+    expect((await nearestSlots(userId)).map((slot) => slot.institutionName)).toEqual(["A", "B", "C"]);
+  });
+
+  it("omite las instituciones sin capacidad", async () => {
+    await makeInstitution({ dailyDonorCapacity: 0 });
+    expect(await nearestSlots(await makeUser())).toEqual([]);
+  });
+
+  it("empieza cuando termina la espera entre donaciones", async () => {
+    const userId = await makeUser();
+    const institutionId = await makeInstitution();
+    const appointment = await createAppointment(userId, { institutionId, appointmentDate: inDays(1) });
+    await confirmAppointment(String(appointment._id));
+
+    const [slot] = await nearestSlots(userId);
+    expect(slot.date).toBe(addMonths(tomorrow, DONATION_INTERVAL_MONTHS.Female));
+  });
+
+  it("vuelve a ofrecer el turno de una cita cancelada", async () => {
+    const userId = await makeUser();
+    const other = await makeUser({ email: "otra@mail.com" });
+    const institutionId = await makeInstitution({ operatingHours: oneSlotHours });
+    await occupy(institutionId, other, 0);
+    const appointment = await createAppointment(other, { institutionId, appointmentDate: inDays(1, "08:00") });
+
+    expect((await nearestSlots(userId))[0].date).toBe(addDays(todayKey(), 2));
+    await cancelAppointment(String(appointment._id));
+    expect((await nearestSlots(userId))[0].date).toBe(tomorrow);
+  });
+
+  it("ofrece un turno que se puede reservar", async () => {
+    const userId = await makeUser();
+    await makeInstitution();
+    const [slot] = await nearestSlots(userId);
+    const appointment = await createAppointment(userId, {
+      institutionId: slot.institutionId,
+      appointmentDate: slotToDate(slot.date, slot.time).toISOString(),
+    });
+    expect(appointment.status).toBe("Pending");
+  });
+
+  it("no expone datos de otras citas", async () => {
+    const userId = await makeUser();
+    const institutionId = await makeInstitution();
+    await createAppointment(await makeUser({ email: "otra@mail.com" }), { institutionId, appointmentDate: inDays(1), notes: "Nota privada" });
+
+    const [slot] = await nearestSlots(userId);
+    expect(Object.keys(slot).sort()).toEqual(["address", "date", "institutionId", "institutionName", "institutionType", "time"]);
+  });
+
+  it("responde 404 si el usuario ya no existe", async () => {
+    await expectError(nearestSlots(String(new mongoose.Types.ObjectId())), 404);
   });
 });
 

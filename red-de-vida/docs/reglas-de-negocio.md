@@ -1,6 +1,6 @@
 # Reglas de negocio — Red de Vida
 
-Plataforma para incentivar la donación de sangre: el donante se registra, agenda una cita en una institución, dona y gana puntos y medallas.
+Red de Vida es una red de sedes de donación de sangre: el donante se registra, agenda una cita en una sede, dona y gana puntos y medallas. La organización y sus sedes son ficticias: es un proyecto demostrativo, no reserva turnos en centros reales y no enlaza a sitios de terceros. En el código y la base, cada sede sigue siendo una `Institution`.
 
 Cada regla indica dónde vivía en el sistema original y dónde vive ahora. El código de referencia es `src/domain/rules.ts` (reglas puras) y `src/server/services/` (las que necesitan la base de datos). El servidor es siempre quien decide: lo que hace el cliente es solo feedback anticipado.
 
@@ -48,6 +48,12 @@ Una cita se acepta solo si se cumple todo lo siguiente, en este orden:
 
 Se calcula desde la donación más reciente de la colección `donations`, no desde la última cita. Sumar meses no desborda: 30/11 + 3 meses es 28/02.
 
+### Turno más cercano
+
+El paso de reserva puede buscar el primer turno libre sin elegir institución. No agrega reglas: usa la misma ventana de reserva y el mismo cálculo de turnos, y muestra hasta `NEAREST_SLOTS_LIMIT` (3) opciones, una por institución, de la más cercana a la más lejana. Si hay empate de fecha y hora, gana el orden alfabético.
+
+Elegir una opción solo completa el formulario. La cita se valida entera al confirmarla, porque el turno pudo ocuparse entretanto.
+
 ## Estados de una cita
 
 ```text
@@ -89,6 +95,8 @@ Confirmar significa que el donante asistió y donó. En ese momento:
 
 La colección `awards` puede estar vacía: no había endpoint ni seed para poblarla. Por eso la pantalla calcula las medallas desde los puntos, igual que el original, mientras que `users.awards` solo se llena si existen esos documentos (`npm run db:seed`).
 
+El aviso de medalla nueva no vive en la base: quien confirma es un administrador, y el esquema no guarda qué medallas vio el donante. Se comparan los puntos con los de la visita anterior, guardados en `localStorage`, así que el aviso es por dispositivo: la primera visita en cada uno solo anota el valor.
+
 ## Baja de cuenta
 
 Eliminar la cuenta borra de forma permanente al usuario, sus citas y sus donaciones, y retira las referencias en las instituciones. El original solo borraba el documento del usuario, aunque la pantalla prometía borrarlo todo.
@@ -97,7 +105,7 @@ Eliminar la cuenta borra de forma permanente al usuario, sus citas y sus donacio
 
 - Tipos: Hospital, Clínica o Banco de Sangre.
 - Una institución con citas o donaciones no se puede eliminar (409): dejaría historial apuntando a nada.
-- El esquema no guarda sitio web: se resuelve por nombre en `src/domain/institution-directory.ts`. Una institución fuera de esa lista no muestra enlace. El mapa se genera desde la dirección.
+- Las sedes de ejemplo están en `src/domain/institution-directory.ts`. El único servicio externo es el mapa integrado de Google Maps, que recibe la dirección de la sede.
 
 ## Fechas: "hora de pared en UTC"
 
@@ -107,6 +115,16 @@ Eliminar la cuenta borra de forma permanente al usuario, sus citas y sus donacio
 - Mostrarlas con `src/lib/format.ts`, que formatea en UTC.
 - "Hoy" y "ahora" se calculan en `America/Argentina/Buenos_Aires` (`todayKey`, `nowAsWallClock`).
 
+## Información para el donante
+
+`src/lib/donation-guide.ts` reúne lo que la app le cuenta al donante sobre la visita, los estudios y los cuidados. Es informativo: no cambia ninguna regla de reserva. "¿Puedo donar?" también es orientativo y no bloquea nada.
+
+Fuentes, revisadas en noviembre de 2026:
+
+- [Cómo donar sangre](https://www.argentina.gob.ar/salud/donarsangre/como) y [Quiénes pueden donar](https://www.argentina.gob.ar/salud/donarsangre/quienes), del Ministerio de Salud: preparación, pasos, estudios obligatorios, cuidados y exclusiones.
+- [Centro Regional de Hemodonación de Murcia](https://www.murciasalud.es/web/centro-regional-de-hemodonacion/que-es-la-sangre) y [HHS](https://www.hhs.gov/givingequalsliving/sites/default/files/2022-09/HHS-OIDP-Tipos_de_donacio%CC%81n_sangre.pdf): conservación de componentes. No hay fuente argentina; el plazo exacto depende de cada centro.
+- La duración total de "hasta 1 hora" viene del [Manual MSD](https://www.msdmanuals.com/es/hogar/trastornos-de-la-sangre/transfusión-de-sangre/proceso-de-donación-de-sangre): la guía del Ministerio solo da la duración de la extracción.
+
 ## Dudas abiertas
 
 Reglas que el sistema original no define. Hoy se comportan como se indica, pero son decisiones del negocio.
@@ -114,5 +132,7 @@ Reglas que el sistema original no define. Hoy se comportan como se indica, pero 
 | Tema | Comportamiento actual | Por qué importa |
 | --- | --- | --- |
 | Requisitos médicos sin dato | Peso (50 kg) y epilepsia, tuberculosis o cardiopatías son solo texto en la landing: no están en el catálogo de enfermedades. | Quien las padezca no puede declararlas, así que no se le bloquea la cita. |
+| Edad para donar | La app exige de 18 a 75 años. El Ministerio de Salud admite desde los 16 con autorización y, desde los 65, pide certificado médico. | La regla viene del sistema original. Cambiarla necesita decisión del negocio. |
+| Tatuajes y embarazo | Solo se preguntan en "¿Puedo donar?". | No hay dato en el esquema, así que no bloquean la reserva: el centro lo evalúa en la entrevista. |
 | Confirmar antes de la fecha | Se permite, como en el original. | Un administrador podría registrar una donación futura por error. |
 | Personal de las instituciones | Un solo rol de administrador global. | Si cada institución debe confirmar sus citas, hará falta un rol nuevo, y eso sí exige cambiar el esquema. |

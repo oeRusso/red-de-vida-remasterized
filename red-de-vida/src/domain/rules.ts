@@ -11,6 +11,8 @@ export const BOOKING_WINDOW_DAYS = 90;
 export const MIN_DONOR_AGE = 18;
 export const MAX_DONOR_AGE = 75;
 export const DONATIONS_PER_PAGE = 8;
+/** Opciones que ofrece la búsqueda del turno más cercano, cada una en una institución distinta. */
+export const NEAREST_SLOTS_LIMIT = 3;
 /** Días tras la cita en los que un administrador aún puede confirmarla antes de que caduque. */
 export const PENDING_GRACE_DAYS = 1;
 
@@ -177,6 +179,12 @@ export function firstAvailableDay(schedule: InstitutionSchedule, from: string, t
     if (dayState(schedule, day, now) === "available") return day;
   }
   return null;
+}
+
+/** Primer turno libre de la ventana, o null si no queda ninguno. */
+export function earliestSlot(schedule: InstitutionSchedule, from: string, to: string, now: Date = new Date()) {
+  const date = firstAvailableDay(schedule, from, to, now);
+  return date ? { date, time: availableSlots(schedule, date, now)[0] } : null;
 }
 
 export function dayState(schedule: InstitutionSchedule, dateKey: string, now: Date = new Date()): DayState {

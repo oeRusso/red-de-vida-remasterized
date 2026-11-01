@@ -1,7 +1,8 @@
 import { CalendarClock, ClipboardList, Hourglass } from "lucide-react";
 import type { Metadata } from "next";
-import { Suspense } from "react";
 import { CancelAppointmentButton, ConfirmAppointmentButton } from "@/components/appointment-actions";
+import { CountUp } from "@/components/motion/count-up";
+import { PageTransition, SuspenseReveal } from "@/components/motion/transitions";
 import { Card, PageHeading, PageSkeleton } from "@/components/ui";
 import { toDateKey, todayKey } from "@/domain/rules";
 import { formatTime, formatWeekday } from "@/lib/format";
@@ -35,7 +36,9 @@ async function Content() {
               <Icon aria-hidden />
             </span>
             <div>
-              <dd className="font-display text-3xl leading-none font-semibold">{value}</dd>
+              <dd className="font-display text-3xl leading-none font-semibold">
+                <CountUp value={value} />
+              </dd>
               <dt className="mt-1 text-sm text-muted">{label}</dt>
             </div>
           </div>
@@ -86,11 +89,13 @@ async function Content() {
 
 export default function AdminPage() {
   return (
-    <div className="mx-auto w-full max-w-5xl px-4 py-10">
-      <PageHeading title="Citas pendientes" description="Confirma la cita cuando el donante haya donado: ahí se registra la donación y se otorgan los puntos." />
-      <Suspense fallback={<PageSkeleton />}>
-        <Content />
-      </Suspense>
-    </div>
+    <PageTransition>
+      <div className="mx-auto w-full max-w-5xl px-4 py-10">
+        <PageHeading title="Citas pendientes" description="Confirma la cita cuando el donante haya donado: ahí se registra la donación y se otorgan los puntos." />
+        <SuspenseReveal fallback={<PageSkeleton />}>
+          <Content />
+        </SuspenseReveal>
+      </div>
+    </PageTransition>
   );
 }
