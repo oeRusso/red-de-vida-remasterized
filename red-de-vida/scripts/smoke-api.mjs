@@ -1,6 +1,7 @@
 // Prueba HTTP contra la app en marcha: permisos, fuga de datos y flujo completo.
 // Necesita los datos de `npm run db:seed` y ADMIN_USER_IDS configurado. Ver README.
 const BASE = process.env.BASE_URL ?? "http://localhost:3000";
+// Contra producción, la clave del admin es SEED_ADMIN_PASSWORD (ver docs/despliegue.md).
 let pass = 0, fail = 0;
 const check = (name, ok, extra = "") => {
   if (ok) pass++;
@@ -62,7 +63,7 @@ check("login → 200", login.status === 200, login.text);
 check("cookie httpOnly y SameSite", /HttpOnly/i.test(login.setCookie) && /SameSite=lax/i.test(login.setCookie), login.setCookie);
 check("el token no viaja en el cuerpo", !("token" in login.json.payload));
 await other("/auth/login", { method: "POST", body: { email: `other${stamp}@mail.com`, password: "Clave+123" } });
-const adminLogin = await admin("/auth/login", { method: "POST", body: { email: "admin@reddevida.test", password: "Admin1234" } });
+const adminLogin = await admin("/auth/login", { method: "POST", body: { email: "admin@reddevida.test", password: process.env.SMOKE_ADMIN_PASSWORD ?? "Admin1234" } });
 check("login admin", adminLogin.status === 200);
 
 const donorId = login.json.payload.user.id;

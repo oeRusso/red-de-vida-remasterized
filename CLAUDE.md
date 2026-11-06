@@ -11,6 +11,18 @@ Red de Vida: red ficticia de sedes de donación de sangre, con citas, historial 
 
 Antes de cambiar reglas, leer `red-de-vida/docs/reglas-de-negocio.md`. Las decisiones de migración, los cambios de contrato y lo pendiente están en `red-de-vida/docs/migracion.md`, y las de diseño en `red-de-vida/docs/diseno.md`.
 
+## Despliegue
+
+Producción vive en el VPS compartido de Contabo, en `https://reddevida.esteban-russo.com`. Antes de tocar nada del despliegue, leer `/run/media/estebanrusso/3ADAD252DAD20A51/PROYECTOS-PERSONALES/PORTAFOLIO2.0/docs/VPS-COMPARTIDO.md` y `red-de-vida/docs/despliegue.md`. Reglas:
+
+- **No usar servicios de terceros, SaaS ni APIs externas sin preguntar.** Todo corre en el VPS, en contenedores: la base es el MongoDB del compose, no Atlas.
+- **En Cloudflare, el agente no crea nada.** Esteban crea el túnel `reddevida` y su ruta a `http://web:3000`. Cloudflare crea el DNS solo, y no se agregan otros registros.
+- **Costo cero.** Solo lo ya pago: el VPS y Cloudflare Free.
+- **Ningún puerto publicado a internet.** El tráfico entra solo por el túnel. Si hace falta un puerto para administrar, va en `127.0.0.1` y sin chocar con los ya usados.
+- **Los secretos no pasan por el chat ni por git.** Las contraseñas se generan en el VPS sin mostrarlas, y el token del túnel lo carga Esteban.
+- **`sudo` lo corre Esteban.** El agente le pasa el comando exacto.
+- **Se despliega `main`.** Se trabaja en `development` y se abre un PR, que mergea Esteban; el agente no mergea.
+
 ## Comandos
 
 Ejecutar dentro de `red-de-vida/`.

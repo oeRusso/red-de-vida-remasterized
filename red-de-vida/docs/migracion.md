@@ -10,11 +10,12 @@ Lo único nuevo son tres índices en `appointments`, que no se crean solos en pr
 
 ## Pasos para pasar a producción
 
-1. Configurar las variables de `.env.example`. `MONGO_URI_PROD` y `JWT_SECRET` pueden ser las mismas de Render.
-2. Crear los índices: `npm run db:indexes -- --prod`. Si falla, hay duplicados previos (por ejemplo, un usuario con dos citas `Pending`) que hay que resolver a mano; el comando indica cuáles colecciones fallaron y no borra nada.
-3. Crear los premios que falten: `npm run db:seed -- --prod`. Solo inserta; nunca modifica documentos existentes.
-4. Poner en `ADMIN_USER_IDS` el `_id` de quienes confirmarán citas.
-5. Desplegar sobre HTTPS: la cookie de sesión es `Secure` en producción.
+Producción corre en el VPS compartido, con MongoDB en un contenedor propio: el paso a paso está en [despliegue.md](despliegue.md). Si alguna vez se apunta la app a la base del sistema original:
+
+1. Crear los índices: `npm run db:indexes -- --prod`. Si falla, hay duplicados previos (por ejemplo, un usuario con dos citas `Pending`) que hay que resolver a mano; el comando indica cuáles colecciones fallaron y no borra nada.
+2. Crear los premios que falten: `npm run db:seed -- --prod`. Solo inserta; nunca modifica documentos existentes.
+3. Poner en `ADMIN_USER_IDS` el `_id` de quienes confirmarán citas.
+4. Servir sobre HTTPS: la cookie de sesión es `Secure` en producción.
 
 El dominio cambia al dejar Netlify y Render, y las sesiones abiertas no se migran: cada usuario inicia sesión una vez más.
 

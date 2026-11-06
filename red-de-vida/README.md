@@ -7,6 +7,7 @@ Hecha con Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4, MongoDB
 - [Reglas de negocio](docs/reglas-de-negocio.md)
 - [Migración desde el sistema original](docs/migracion.md)
 - [Decisiones de diseño](docs/diseno.md)
+- [Despliegue](docs/despliegue.md): <https://reddevida.esteban-russo.com>
 
 ## Puesta en marcha
 
@@ -47,6 +48,6 @@ Pega en `.env.local` la línea `ADMIN_USER_IDS` que imprimió el seed y reinicia
 | `npm run typecheck` | Comprobación de tipos. |
 | `npm test` | Tests de dominio y servicios con un MongoDB real en memoria. |
 | `npm run test:smoke` | Permisos y flujo completo por HTTP, contra la app en marcha con los datos del seed. |
-| `npm run db:seed` | Inserta lo que falte. Con `-- --prod`, solo premios en producción. |
+| `npm run db:seed` | Inserta lo que falte. Con `-- --prod`, solo premios en producción; con `-- --prod --demo`, también sedes y cuentas demo, con la clave del admin tomada de `SEED_ADMIN_PASSWORD`. |
 | `npm run db:indexes` | Crea los índices. Con `-- --prod`, en producción. |
 | `npm run db:memory` | MongoDB efímero en el puerto 27017. |
