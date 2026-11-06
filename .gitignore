@@ -1,2 +1,2 @@
-node_modules
+# Secretos de producción (ver .env.production.example)
 .env

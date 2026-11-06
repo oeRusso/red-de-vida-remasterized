@@ -1,0 +1,64 @@
+# Producción en el VPS compartido: ver red-de-vida/docs/despliegue.md.
+# Sin puertos publicados: el tráfico entra solo por el túnel de Cloudflare.
+name: reddevida
+
+x-mongo-uri: &mongo-uri mongodb://reddevida:${MONGO_PASSWORD:?Definí MONGO_PASSWORD en .env}@mongo:27017/reddevida?authSource=admin
+
+services:
+  mongo:
+    image: mongo:8.0
+    restart: unless-stopped
+    command: ["mongod", "--wiredTigerCacheSizeGB", "0.25"]
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: reddevida
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:?Definí MONGO_PASSWORD en .env}
+    volumes:
+      - mongo-data:/data/db
+    mem_limit: 768m
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 15s
+      timeout: 5s
+      start_period: 20s
+      retries: 5
+
+  web:
+    build:
+      context: ./red-de-vida
+      target: runner
+    restart: unless-stopped
+    environment:
+      MONGO_URI_PROD: *mongo-uri
+      JWT_SECRET: ${JWT_SECRET:?Definí JWT_SECRET en .env}
+      ADMIN_USER_IDS: ${ADMIN_USER_IDS:-}
+    mem_limit: 512m
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN:?Definí TUNNEL_TOKEN en .env}
+    mem_limit: 128m
+    depends_on:
+      web:
+        condition: service_healthy
+
+  # Solo bajo demanda: docker compose run --rm tools npm run db:indexes -- --prod
+  tools:
+    build:
+      context: ./red-de-vida
+      target: tools
+    profiles: ["tools"]
+    environment:
+      MONGO_URI_PROD: *mongo-uri
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-}
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+volumes:
+  mongo-data:
